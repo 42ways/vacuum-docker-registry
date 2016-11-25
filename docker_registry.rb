@@ -50,7 +50,7 @@ class DockerRegistry
 
     def request(url, clazz=Net::HTTP::Get)
         uri = URI(@base_url + url)
-        res = Net::HTTP.start(uri.host, uri.port) do |http|
+        res = Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
             request = clazz.new uri.request_uri
             request["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
             #pp uri.request_uri
