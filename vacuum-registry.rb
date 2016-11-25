@@ -75,7 +75,7 @@ def cleanup_tags(reg, repo, cleanup_res=[], keep_count=5, dry_run=true)
     delete_digests
 end
 
-options = { 
+options = {
     :config => "vacuum-registry.yml",
     :dry_run => false,
 }
@@ -90,13 +90,22 @@ OptionParser.new do |opts|
     opts.on("-cCFG", "--config=CFG", "config file to use") do |c|
         options[:config] = c
     end
+    opts.on("--ca-file", "Trust CA certificate from file") do |c|
+        options[:ca_file] = c
+    end
+    opts.on("-k", "--insecure", "Do not verify peer SSL certificate") do |c|
+        options[:insecure] = true
+    end
 end.parse!
 
 keep_spec = YAML.load_file(options[:config])
 
 reg_url = keep_spec["registry"] or "https://localhost:5000"
 
-reg = DockerRegistry.new(reg_url)
+reg = DockerRegistry.new(
+    reg_url,
+    options.fetch(:ca_file) { keep_spec["ca_file"] },
+    options.fetch(:insecure) { keep_spec.fetch("insecure") { false }})
 reg.validate()
 
 default_keep_count = keep_spec["keep_count"] || 5

@@ -44,13 +44,18 @@ class HttpError < Exception
 end
 
 class DockerRegistry
-    def initialize(base_url)
+    def initialize(base_url, ca_file=nil, insecure=false)
         @base_url = base_url + "/v2/"
+        @ca_file = ca_file
+        @insecure = insecure
     end
 
     def request(url, clazz=Net::HTTP::Get)
         uri = URI(@base_url + url)
-        res = Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https') do |http|
+        res = Net::HTTP.start(uri.host, uri.port,
+                              :use_ssl => uri.scheme == 'https',
+                              :ca_file => @ca_file,
+                              :verify_mode => @insecure ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER) do |http|
             request = clazz.new uri.request_uri
             request["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
             #pp uri.request_uri
@@ -103,5 +108,38 @@ class DockerRegistry
 
     def delete_blob(repo, digest)
         res = request("#{q(repo)}/blobs/#{q(digest)}", clazz=Net::HTTP::Delete)
+    end
+end
+
+if __FILE__ == $PROGRAM_NAME
+    options = {
+        :insecure => false
+    }
+
+    OptionParser.new do |opts|
+        opts.banner = "Usage: docker_registry.rb [options] <command>"
+
+        opts.on("-cFILE", "--ca-file", "Trust CA certificate from file") do |c|
+            options[:ca_file] = c
+        end
+        opts.on("-k", "--insecure", "Do not verify peer SSL certificate") do |c|
+            options[:insecure] = true
+        end
+    end.parse!
+
+    if ARGV.size < 2
+        puts "Syntax: #{$0} <registry> command"
+        exit 1
+    end
+
+    r = DockerRegistry.new(ARGV[0], options[:ca_file], options[:insecure])
+    r.validate
+    result = r.send(ARGV[1], *ARGV[2..-1])
+    if result.is_a? Enumerable
+        for r in result
+            puts "- #{r}"
+        end
+    else
+        puts result
     end
 end
