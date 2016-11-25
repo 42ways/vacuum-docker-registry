@@ -97,6 +97,7 @@ keep_spec = YAML.load_file(options[:config])
 reg_url = keep_spec["registry"] or "https://localhost:5000"
 
 reg = DockerRegistry.new(reg_url)
+reg.validate()
 
 default_keep_count = keep_spec["keep_count"] || 5
 
@@ -109,4 +110,4 @@ for repo, repo_spec in keep_spec["repositories"]
     total += deleted.size
 end
 
-exit total == 0 ? 1 : 0
+exit total == 0 ? 100 : 0
