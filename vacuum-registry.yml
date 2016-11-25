@@ -1,0 +1,6 @@
+keep_count: 5
+registry: http://localhost:5000
+repositories:
+    tt-qa:
+        cleanup:
+            - "b-.*"
