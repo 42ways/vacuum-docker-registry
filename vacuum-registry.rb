@@ -25,7 +25,7 @@ require "uri"
 require "set"
 require "yaml"
 
-require "./docker_registry"
+require_relative "./docker_registry"
 
 def to_token_array(s)
     # partition the string into numeric and non-numeric token, for better
@@ -76,7 +76,7 @@ def cleanup_tags(reg, repo, cleanup_res=[], keep_count=5, dry_run=true)
 end
 
 options = { 
-    :config => "vacuum-docker-registry.yml", 
+    :config => "vacuum-registry.yml",
     :dry_run => false,
 }
 
