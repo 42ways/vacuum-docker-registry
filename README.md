@@ -1,6 +1,6 @@
 # vacuum-docker-registry - A simple vacuum script for docker registries
 
-This is a simple vacuum script that cleans old images (:= 'manifests' in 
+This is a simple vacuum script that cleans old images (:= 'manifests' in
 docker-registry lingo) from a docker-registry. It it stateless except for its
 configuration and only uses the tags from the registry.
 
@@ -14,8 +14,8 @@ but also any that are currently used in production.
 For each repository, it lists all the tags. If a tag is matched by one regular
 expressions in the "cleanup" section of the config, it is elegible for cleanup.
 
-All tags not matching an entry of the "cleanup" section are always kept. Of the 
-candidates we keep the n highest ones according to mixed alpha-numeric order 
+All tags not matching an entry of the "cleanup" section are always kept. Of the
+candidates we keep the n highest ones according to mixed alpha-numeric order
 (see below).
 
 We then delete all manifests that are _only_ referenced by deleted tags (but
