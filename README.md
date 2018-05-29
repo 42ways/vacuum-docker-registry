@@ -7,6 +7,25 @@ configuration and only uses the tags from the registry.
 A typical use case is to keep the latest n builds from a CI system like jenkins,
 but also any that are currently used in production.
 
+**Note**: The docker registry currently (as of version 2.4) does not provide a
+REST API to actually free ("garbage collect") the disk space. This tool just
+cleans up the metadata.
+
+In order to free the disk space, you have to run the
+*Docker Registry Garbage Collection* as described [here](https://docs.docker.com/registry/garbage-collection/).
+
+A typical wrapper script could look like this:
+```bash
+   rv=vacuum-registry.rb
+   if [[ $rv == 0 ]]; then
+      # images were deleted
+      # shutdown docker registry service
+      service docker-registry stop
+      docker run
+      service docker-registry start
+   fi
+```
+
 ## Cleanup Strategy:
 
 `vacuum-registry` inspects each repository ("image" ) listed in its configuration.
