@@ -36,8 +36,8 @@ end
 
 class HttpError < Exception
     attr_reader :code, :code_message, :body
-    def initialize(code, code_message, body)
-        super("HTTP Error #{code}: #{code_message}")
+    def initialize(url, code, code_message, body)
+        super("HTTP Error #{code} on #{url}: #{code_message}")
         @body = body
         @code_message = code_message
         @code = code
@@ -71,7 +71,7 @@ class DockerRegistry
             body = if res.body.empty? then nil else JSON.parse(res.body) end
             [body, res.to_hash]
         elsif res.is_a? Net::HTTPClientError
-            raise HttpError.new(res.code, res.message, res.body)
+            raise HttpError.new(url, res.code, res.message, res.body)
         else
             raise "Unknown response: #{res}"
         end
