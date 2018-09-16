@@ -53,7 +53,7 @@ class DockerRegistry
         @base_url = base_url + "/v2/"
         @ca_file = ca_file
         @insecure = insecure
-        @logger = DEFAULT_LOGGER
+        @logger = logger
     end
 
     def request(url, clazz=Net::HTTP::Get)
