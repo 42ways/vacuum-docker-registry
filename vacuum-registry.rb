@@ -18,14 +18,17 @@
 #  limitations under the License.
 #
 require "json"
-require "net/http"
+require "logger"
 require "optparse"
 require "pp"
-require "uri"
 require "set"
 require "yaml"
 
 require_relative "./docker_registry"
+
+LOGGER = Logger.new(STDERR)
+LOGGER.level = Logger::INFO
+
 
 def to_token_array(s)
     # partition the string into numeric and non-numeric token, for better
@@ -110,6 +113,9 @@ def main
         opts.on("-k", "--insecure", "Do not verify peer SSL certificate") do |c|
             options[:insecure] = true
         end
+        opts.on("-v", "--verbose", "Verbose output") do |c|
+            LOGGER.level = Logger::DEBUG
+        end
     end.parse!
 
     keep_spec = YAML.load_file(options[:config])
@@ -119,7 +125,9 @@ def main
     reg = DockerRegistry.new(
         reg_url,
         options.fetch(:ca_file) { keep_spec["ca_file"] },
-        options.fetch(:insecure) { keep_spec.fetch("insecure") { false }})
+        options.fetch(:insecure) { keep_spec.fetch("insecure") { false }},
+        LOGGER
+    )
     reg.validate()
 
     default_keep_count = keep_spec["keep_count"] || 5
