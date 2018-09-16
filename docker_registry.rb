@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "json"
+require "logger"
 require "net/http"
 require "optparse"
 require "pp"
@@ -8,6 +9,9 @@ require "openssl"
 require "uri"
 require "set"
 require "yaml"
+
+DEFAULT_LOGGER = Logger.new(STDERR)
+DEFAULT_LOGGER.level = Logger::WARN
 
 def q(s)
     URI.escape(s)
@@ -36,8 +40,8 @@ end
 
 class HttpError < Exception
     attr_reader :code, :code_message, :body
-    def initialize(code, code_message, body)
-        super("HTTP Error #{code}: #{code_message}")
+    def initialize(url, code, code_message, body)
+        super("HTTP Error #{code} on #{url}: #{code_message}")
         @body = body
         @code_message = code_message
         @code = code
@@ -45,23 +49,27 @@ class HttpError < Exception
 end
 
 class DockerRegistry
-    def initialize(base_url, ca_file=nil, insecure=false)
+    def initialize(base_url, ca_file=nil, insecure=false, logger=DEFAULT_LOGGER)
         @base_url = base_url + "/v2/"
         @ca_file = ca_file
         @insecure = insecure
+        @logger = DEFAULT_LOGGER
     end
 
     def request(url, clazz=Net::HTTP::Get)
         uri = URI(@base_url + url)
+
         res = Net::HTTP.start(uri.host, uri.port,
                               :use_ssl => uri.scheme == 'https',
                               :ca_file => @ca_file,
                               :verify_mode => @insecure ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER) do |http|
-            request = clazz.new uri.request_uri
+            request_uri_param = if uri.respond_to? :request_uri then uri.request_uri else uri end
+            request = clazz.new request_uri_param
             request["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
-            #pp uri.request_uri
+            @logger.debug("Request #{clazz} #{uri}")
             http.request request
         end
+        @logger.debug("Reponse #{clazz} #{uri} returned #{res.code} (#{res.body})")
         res
     end
 
@@ -71,7 +79,7 @@ class DockerRegistry
             body = if res.body.empty? then nil else JSON.parse(res.body) end
             [body, res.to_hash]
         elsif res.is_a? Net::HTTPClientError
-            raise HttpError.new(res.code, res.message, res.body)
+            raise HttpError.new(url, res.code, res.message, res.body)
         else
             raise "Unknown response: #{res}"
         end
@@ -125,6 +133,9 @@ if __FILE__ == $PROGRAM_NAME
         end
         opts.on("-k", "--insecure", "Do not verify peer SSL certificate") do |c|
             options[:insecure] = true
+        end
+        opts.on("-v", "--verbose", "Verbose output") do |c|
+            DEFAULT_LOGGER.level = Logger::DEBUG
         end
     end.parse!
 
