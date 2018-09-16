@@ -44,7 +44,7 @@ class HttpError < Exception
         super("HTTP Error #{code} on #{url}: #{code_message}")
         @body = body
         @code_message = code_message
-        @code = code
+        @code = code.to_i
     end
 end
 
@@ -107,7 +107,15 @@ class DockerRegistry
     end
 
     def get_manifest(repo, reference)
-        manifest, headers = json_request("#{q(repo)}/manifests/#{q(reference)}")
+        begin
+            manifest, headers = json_request("#{q(repo)}/manifests/#{q(reference)}")
+        rescue HttpError => e
+            if e.code == 404
+                return nil
+            else
+                raise e
+            end
+        end
         Manifest.new(headers["docker-content-digest"].first, manifest)
     end
 

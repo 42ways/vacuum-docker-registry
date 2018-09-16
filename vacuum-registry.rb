@@ -45,6 +45,10 @@ def cleanup_tags(reg, repo, cleanup_res=[], keep_count=5, dry_run=true)
 
     for tag in tags
         manifest = reg.get_manifest(repo, tag)
+        if not manifest
+            LOGGER.warn("Could not get manifest for repo #{repo} tag #{tag}. Skipping")
+            next
+        end
         tags_digests[tag] = manifest.digest
 
         if match = cleanup_res.map { |re| re.match(tag) }.find { |m| not m.nil? }
