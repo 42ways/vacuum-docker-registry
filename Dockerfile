@@ -9,6 +9,6 @@ RUN apt-get update \
 
 RUN useradd -m user
 USER user
-COPY /work/ /home/user
+COPY * /home/user/
 WORKDIR /home/user
 CMD ./vacuum-registry.rb
