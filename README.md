@@ -21,7 +21,7 @@ A typical wrapper script could look like this:
       # images were deleted
       # shutdown docker registry service
       service docker-registry stop
-      docker run
+      docker-compose run registry garbage-collect /etc/docker/registry/config.yml
       service docker-registry start
    fi
 ```
@@ -60,6 +60,21 @@ listed in the cleanup section.
 
 Note this enables us to keep any images that are currently in production by tagging those images;
 e.g., by `prod-#{servername}`.
+
+## Cleanup groups
+
+vacuum-docker registry optionally allows grouping images. The cleanup is applied to each group separately. This 
+allows to keep, e.g., the last "n" builds for every branch.
+
+A grouping can be specified in the regular expression by using the named match group `(?<group>.*)`.
+
+For instance, say images are tagged with `${branch_name}-b-${build_number}`. Then specifying the clean up
+regular expression:
+``` 
+    - (?<group>.*)-b-.*"    
+```
+... will result in each branch being looked at as a separate group; and the latest `$keep_count` builds from each groups being retained.
+
 
 ## Tags sort order
 
