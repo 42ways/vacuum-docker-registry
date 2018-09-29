@@ -24,6 +24,10 @@ class Layer
         @size = dict["size"]
         @digest = dict["digest"]
     end
+
+    def to_s
+        "Digest=#{@digest}, Size: #{@size}"
+    end
 end
 
 
@@ -35,6 +39,10 @@ class Manifest
         @version = dict["schemaVersion"]
         raise "unknown manifest version: #{@version}" unless @version == 2
         @layers = dict["layers"].map { |d| Layer.new(d) }
+    end
+
+    def to_s
+        "Digest=#{@digest}, Layers: #{@layers}"
     end
 end
 
@@ -126,7 +134,44 @@ class DockerRegistry
     def delete_blob(repo, digest)
         res = request("#{q(repo)}/blobs/#{q(digest)}", clazz=Net::HTTP::Delete)
     end
+
+    def human_size(i)
+        sizes = [ "B", "KB", "MB", "GB", "TB" ]
+        index = 0
+        while i > 1000.0 && index < sizes.length
+            i /= 1000.0
+            index += 1
+        end
+        return sprintf("%.1f %s", i, sizes[index])
+    end
+
+
+    def list_all
+        for repo in self.list_repositories
+            puts " - #{repo}"
+            repo_sizes = {}
+            for tag in self.list_tags(repo)
+                begin
+                    mani = get_manifest(repo, tag)
+                    if mani.nil?
+                        raise "No manifest found"
+                    end
+                rescue RuntimeError => e
+                    puts "  - #{tag} (error: #{e})"
+                    next
+                end
+                digest = mani.digest
+                size = mani.layers.inject(0) { |sum, l| sum + l.size }
+                puts "  - #{tag} (#{digest}) #{human_size(size)}"
+                for l in mani.layers
+                    repo_sizes[l.digest] = l.size
+                end
+            end
+            puts " - overall: #{human_size(repo_sizes.values.inject(0) { |sum, x| sum + x }) } "
+        end
+    end
 end
+
 
 if __FILE__ == $PROGRAM_NAME
     options = {
