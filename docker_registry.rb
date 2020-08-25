@@ -161,7 +161,7 @@ class DockerRegistry
                     next
                 end
                 digest = mani.digest
-                size = mani.layers.inject(0) { |sum, l| sum + l.size }
+                size = mani.layers.inject(0) { |sum, l| sum + l.size.to_i }
                 puts "  - #{tag} (#{digest}) #{human_size(size)}"
                 for l in mani.layers
                     repo_sizes[l.digest] = l.size
