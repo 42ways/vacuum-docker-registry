@@ -145,29 +145,32 @@ class DockerRegistry
         return sprintf("%.1f %s", i, sizes[index])
     end
 
+    def list_size(repo)
+	puts " - #{repo}"
+	repo_sizes = {}
+	for tag in self.list_tags(repo)
+	    begin
+		mani = get_manifest(repo, tag)
+		if mani.nil?
+		    raise "No manifest found"
+		end
+	    rescue RuntimeError => e
+		puts "  - #{tag} (error: #{e})"
+		next
+	    end
+	    digest = mani.digest
+	    size = mani.layers.inject(0) { |sum, l| sum + l.size.to_i }
+	    puts "  - #{tag} (#{digest}) #{human_size(size)}"
+	    for l in mani.layers
+		repo_sizes[l.digest] = l.size
+	    end
+	end
+	puts " - overall: #{human_size(repo_sizes.values.inject(0) { |sum, x| sum + x }) } "
+    end
 
     def list_all
         for repo in self.list_repositories
-            puts " - #{repo}"
-            repo_sizes = {}
-            for tag in self.list_tags(repo)
-                begin
-                    mani = get_manifest(repo, tag)
-                    if mani.nil?
-                        raise "No manifest found"
-                    end
-                rescue RuntimeError => e
-                    puts "  - #{tag} (error: #{e})"
-                    next
-                end
-                digest = mani.digest
-                size = mani.layers.inject(0) { |sum, l| sum + l.size.to_i }
-                puts "  - #{tag} (#{digest}) #{human_size(size)}"
-                for l in mani.layers
-                    repo_sizes[l.digest] = l.size
-                end
-            end
-            puts " - overall: #{human_size(repo_sizes.values.inject(0) { |sum, x| sum + x }) } "
+            list_size(repo)
         end
     end
 end
