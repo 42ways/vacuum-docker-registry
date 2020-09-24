@@ -104,8 +104,8 @@ class DockerRegistry
         end
     end
 
-    def list_repositories()
-        res, _ = json_request("_catalog")
+    def list_repositories(count=250)
+        res, _ = json_request("_catalog?n=#{count}")
         res["repositories"]
     end
 
