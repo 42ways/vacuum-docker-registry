@@ -29,12 +29,14 @@ require_relative "./docker_registry"
 LOGGER = Logger.new(STDERR)
 LOGGER.level = Logger::INFO
 
+NUMERIC_TOKEN = 0
+STRING_TOKEN = 1
 
 def to_token_array(s)
     # partition the string into numeric and non-numeric token, for better
     # mixed search
 
-    s.split(/(\d+)/).reject { |s| s.empty? }.map { |w| if w =~ /\d+/ then w.to_i else w end }
+    s.split(/(\d+)/).reject { |s| s.empty? }.map { |w| if w =~ /\d+/ then [NUMERIC_TOKEN, w.to_i] else [STRING_TOKEN, w] end }
 end
 
 def cleanup_tags(reg, repo, cleanup_res=[], keep_count=5, dry_run=true)
@@ -52,7 +54,7 @@ def cleanup_tags(reg, repo, cleanup_res=[], keep_count=5, dry_run=true)
         tags_digests[tag] = manifest.digest
 
         if match = cleanup_res.map { |re| re.match(tag) }.find { |m| not m.nil? }
-            group = match["group"] if match.names.member? "group"
+            group = match.names.member?("group") ? match["group"] : nil
             group = "_ungrouped" unless group
             g = cleanup_candidates[group]
             unless g
